@@ -2,7 +2,9 @@ module Main exposing (main)
 
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Html exposing (div)
+import Html exposing (div, button)
+import Html.Attributes
+import Html.Events exposing (onClick)
 import Time exposing (..)
 import Dict exposing (Dict)
 
@@ -12,11 +14,12 @@ type alias Model =
     , y : Int
     , squares : Dict ( Int, Int ) Square
     , direction : Direction
+    , play : Bool
     }
 
 
 size =
-    5
+    1
 
 
 canvasDimension =
@@ -37,7 +40,17 @@ type Square
 
 view model =
     div []
-        [ svg [ width (toString canvasDimension), height (toString canvasDimension), viewBox "0 0 120 120" ]
+        [ svg
+            [ onClick TogglePlay
+            , Html.Attributes.style
+                [ ( "cursor", "pointer" )
+                , ( "display", "block" )
+                , ( "margin", "0 auto" )
+                ]
+            , width "100vw"
+            , height "100vh"
+            , viewBox "0 0 120 120"
+            ]
             ([ rect
                 [ x (toString model.x)
                 , y (toString model.y)
@@ -61,17 +74,22 @@ view model =
                             )
                    )
             )
+        , button [ onClick TogglePlay ] [ text "Play/Pause" ]
         , div [] [ text <| toString model ]
         ]
 
 
 type Msg
     = Tick Time
+    | TogglePlay
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        TogglePlay ->
+            { model | play = not model.play } ! []
+
         Tick _ ->
             case Dict.get ( model.x, model.y ) model.squares of
                 Nothing ->
@@ -191,7 +209,10 @@ turnLeft direction =
 
 
 subscriptions model =
-    every (1 * millisecond) Tick
+    if model.play then
+        every (1 * millisecond) Tick
+    else
+        Sub.none
 
 
 main : Program Never Model Msg
@@ -205,6 +226,7 @@ main =
               , y = 50
               , squares = Dict.empty
               , direction = Top
+              , play = True
               }
             , Cmd.none
             )
